@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <title>WordTris: Pro Edition</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Titan+One&family=Nunito:wght@400;700;900&family=Bungee+Inline&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { background-color: #040c1a; color: white; font-family: 'Nunito', sans-serif; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; }
+        .clash-font { font-family: 'Titan One', cursive; letter-spacing: 1px; }
+        .rune-font { font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: 2px; }
+        .sahtar-logo { font-family: 'Bungee Inline', cursive; }
+
+        /* ===== CYBER-RUNE CORE PALETTE ===== */
+        :root {
+            --cyan: #00f5ff;
+            --magenta: #ff2d9c;
+            --amber: #ffb300;
+            --obsidian: #0a0e1a;
+        }
+
+        /* LOADER */
+        #loader { position: fixed; inset: 0; background: #040c1a; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+
+        /* CARD SHINE */
+        .card-shine { position: relative; overflow: hidden; }
+        .card-shine::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(to bottom right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.05) 60%, rgba(255,255,255,0) 100%); transform: rotate(30deg); animation: shine 4s infinite; pointer-events: none; }
+        @keyframes shine { 0% { transform: translateX(-100%) rotate(30deg); } 100% { transform: translateX(100%) rotate(30deg); } }
+
+        /* NAV BAR - frosted glass */
+        .nav-bar { background: rgba(4,12,26,0.92); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-top: 1px solid rgba(0,245,255,0.08); }
+
+        /* TOP HUD - frosted glass panel */
+        .hud-panel {
+            background: rgba(4,12,26,0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0,245,255,0.15);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.6), inset 0 1px 0 rgba(0,245,255,0.1);
+        }
+
+        /* ===== BLOCK STYLES ===== */
+        .block-active {
+            background: linear-gradient(135deg, #ffe082, #ff8f00);
+            box-shadow:
+                inset 0 2px 0 rgba(255,255,255,0.7),
+                inset 0 -2px 0 rgba(0,0,0,0.4),
+                0 0 12px rgba(255,179,0,0.7),
+                0 0 24px rgba(255,179,0,0.3);
+            border: 1.5px solid #ffb300;
+            border-radius: 8px;
+        }
+        .block-locked {
+            background: linear-gradient(135deg, #0d2a5e, #1a3a7a);
+            box-shadow:
+                inset 0 1px 0 rgba(0,245,255,0.4),
+                inset 0 -1px 0 rgba(0,0,0,0.5),
+                0 0 8px rgba(0,245,255,0.25);
+            border: 1px solid rgba(0,245,255,0.35);
+            border-radius: 8px;
+        }
+        .block-ghost {
+            background: rgba(0,245,255,0.04);
+            border: 1.5px dashed rgba(0,245,255,0.25);
+            border-radius: 8px;
+        }
+        /* JOKER WILDCARD BLOCK - rainbow shifting glow */
+        .block-joker {
+            background: linear-gradient(135deg, #ff006e, #8338ec, #3a86ff, #06ffa5);
+            background-size: 300% 300%;
+            animation: jokerShift 2s ease infinite;
+            box-shadow: 0 0 14px rgba(131,56,236,0.8), 0 0 28px rgba(0,245,255,0.4);
+            border: 1.5px solid rgba(255,255,255,0.6);
+            border-radius: 8px;
+        }
+        @keyframes jokerShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        /* 2× SCORE MULTIPLIER BLOCK */
+        .block-multiplier {
+            background: linear-gradient(135deg, #4a0000, #cc2200);
+            box-shadow: 0 0 12px rgba(255,100,0,0.7), 0 0 24px rgba(255,100,0,0.3);
+            border: 1.5px solid #ff6400;
+            border-radius: 8px;
+        }
+
+        /* ===== GAME GRID ===== */
+        .game-grid-bg {
+            background: #030711;
+            background-image:
+                linear-gradient(rgba(0,245,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,245,255,0.03) 1px, transparent 1px);
+        }
+
+        /* SKILL BUTTONS - crystalline docks */
+        .skill-dock {
+            background: linear-gradient(180deg, rgba(0,245,255,0.08) 0%, rgba(0,0,20,0.8) 100%);
+            border: 1px solid rgba(0,245,255,0.2);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.5);
+        }
+        .skill-dock.active {
+            background: linear-gradient(180deg, rgba(255,179,0,0.25) 0%, rgba(255,100,0,0.15) 100%);
+            border-color: rgba(255,179,0,0.6);
+            box-shadow: 0 0 16px rgba(255,179,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15);
+        }
+        .skill-dock .skill-count {
+            background: rgba(0,245,255,0.15);
+            border: 1px solid rgba(0,245,255,0.3);
+            color: #00f5ff;
+        }
+        .skill-dock .skill-count.empty {
+            background: rgba(255,45,156,0.2);
+            border-color: rgba(255,45,156,0.4);
+            color: #ff2d9c;
+        }
+
+        /* ===== UTILITY ===== */
+        .locked-card { filter: grayscale(100%) contrast(80%); opacity: 0.7; pointer-events: none; }
+        .clash-btn { border-bottom: 6px solid rgba(0,0,0,0.4); transition: all 0.1s; cursor: pointer; }
+        .clash-btn:active { border-bottom: 0px solid transparent; transform: translateY(4px); }
+        .targeting-mode { border: 4px solid #ff2d9c !important; box-shadow: 0 0 20px rgba(255,45,156,0.5); }
+        .bomb-glow { animation: bombPulse 0.5s infinite alternate; background: #dc2626 !important; }
+        @keyframes bombPulse { from { opacity: 0.6; transform: scale(1); } to { opacity: 1; transform: scale(1.05); } }
+        .particle { position: absolute; pointer-events: none; animation: floatDown linear infinite; z-index: 0; }
+        @keyframes floatDown { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(110vh) rotate(360deg); opacity: 0; } }
+        .explosion-particle { position: absolute; pointer-events: none; border-radius: 50%; animation: explode 0.65s ease-out forwards; z-index: 30; }
+        @keyframes explode { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; } }
+        .combo-banner { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); z-index: 40; animation: comboPop 1.6s ease-out forwards; pointer-events: none; white-space: nowrap; }
+        @keyframes comboPop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2) rotate(-12deg); } 25% { opacity: 1; transform: translate(-50%, -50%) scale(1.35) rotate(4deg); } 45% { transform: translate(-50%, -50%) scale(1.0); } 75% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -75%) scale(0.85); } }
+        .confetti-piece { position: absolute; width: 9px; height: 9px; pointer-events: none; animation: confettiFall linear forwards; z-index: 100; border-radius: 2px; }
+        @keyframes confettiFall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 100% { transform: translateY(105vh) rotate(720deg); opacity: 0; } }
+        .star-anim { animation: starPop 0.4s ease-out forwards; transform-origin: center; opacity: 0; }
+        @keyframes starPop { 0% { transform: scale(0) rotate(-30deg); opacity: 0; } 70% { transform: scale(1.4) rotate(8deg); opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+        .progress-bar-fill { transition: width 0.5s ease-out; }
+        .animate-shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(4px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-6px, 0, 0); } 40%, 60% { transform: translate3d(6px, 0, 0); } }
+        .freeze-overlay { position: absolute; inset: 0; background: rgba(0,245,255,0.08); backdrop-filter: blur(1px); border: 2px solid rgba(0,245,255,0.3); pointer-events: none; }
+        .scramble-spin { animation: spin 0.6s ease-in-out; }
+        @keyframes spin { 0% { transform: scale(1) rotate(0deg); } 50% { transform: scale(0.9) rotate(180deg); } 100% { transform: scale(1) rotate(360deg); } }
+        .floating-text { animation: floatUp 1s ease-out forwards; pointer-events: none; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1.5); } 100% { opacity: 0; transform: translateY(-50px) scale(1); } }
+        .screen-fade { animation: screenFadeIn 0.2s ease-out; }
+        @keyframes screenFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        .level-card-shine::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%); pointer-events: none; border-radius: inherit; }
+        /* ambient neon glow on splash */
+        .neon-glow { text-shadow: 0 0 20px currentColor, 0 0 40px currentColor; }
+    </style>
+</head>
+<body>
+
+    <div id="loader"></div>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- GELİŞMİŞ SES SİSTEMİ ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const playSound = (type) => {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            
+            // Premium sound designs using multiple envelopes and frequencies
+            if (type === 'click') { 
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                gainNode.gain.setValueAtTime(0.3, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1); 
+            }
+            else if (type === 'coin') { 
+                osc.type = 'sine'; osc.frequency.setValueAtTime(900, now); osc.frequency.setValueAtTime(1200, now + 0.1);
+                gainNode.gain.setValueAtTime(0.3, now); gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3); 
+            }
+            else if (type === 'match') { 
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(440, now); osc.frequency.exponentialRampToValueAtTime(880, now + 0.3);
+                gainNode.gain.setValueAtTime(0.4, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4); 
+            }
+            else if (type === 'win') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(400, now); osc.frequency.setValueAtTime(600, now + 0.2); osc.frequency.setValueAtTime(800, now + 0.4);
+                gainNode.gain.setValueAtTime(0.3, now); gainNode.gain.linearRampToValueAtTime(0, now + 0.8);
+                osc.start(now); osc.stop(now + 0.8); 
+            }
+            else if (type === 'lose') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.6);
+                gainNode.gain.setValueAtTime(0.3, now); gainNode.gain.linearRampToValueAtTime(0, now + 0.6);
+                osc.start(now); osc.stop(now + 0.6); 
+            }
+        };
+
+        let musicInterval;
+        let isMusicPlaying = false;
+        let musicNotes = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88]; // C Major scale
+        const startMusic = () => {
+            if(isMusicPlaying) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            isMusicPlaying = true;
+            let step = 0;
+            musicInterval = setInterval(() => {
+                if(!isMusicPlaying) return clearInterval(musicInterval);
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+                
+                // Generative pattern: Arpeggio + Random
+                let noteFreq = musicNotes[(step * 2 + Math.floor(Math.random() * 2)) % musicNotes.length];
+                // Drop octave occasionally
+                if (Math.random() > 0.8) noteFreq /= 2;
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(noteFreq, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                
+                osc.start(now);
+                osc.stop(now + 0.3);
+                step++;
+            }, 300); // 200 BPM 1/4 notes roughly
+        };
+        const stopMusic = () => {
+            isMusicPlaying = false;
+            clearInterval(musicInterval);
+        };
+
+        const IconBase = ({ children, size=24, className, color="currentColor" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+        );
+        const Icons = {
+            Home: (p) => <IconBase {...p}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></IconBase>,
+            Shop: (p) => <IconBase {...p}><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18 M16 10a4 4 0 0 1-8 0" /></IconBase>,
+            Settings: (p) => <IconBase {...p}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></IconBase>,
+            Coin: (p) => <IconBase {...p}><circle cx="12" cy="12" r="10" /><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" /><path d="M12 18V6" /></IconBase>,
+            Close: (p) => <IconBase {...p}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></IconBase>,
+            Video: (p) => <IconBase {...p}><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" /></IconBase>,
+            ArrowLeft: (p) => <IconBase {...p}><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></IconBase>,
+            ArrowRight: (p) => <IconBase {...p}><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></IconBase>,
+            ArrowDown: (p) => <IconBase {...p}><line x1="12" y1="5" x2="12" y2="19" /><polyline points="19 12 12 19 5 12" /></IconBase>,
+            Rotate: (p) => <IconBase {...p}><polyline points="1 4 1 10 7 10" /><polyline points="23 20 23 14 17 14" /><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" /></IconBase>,
+            Trophy: (p) => <IconBase {...p}><path d="M8 2.1c1.5-.1 3-.1 4.5-.1h3c3.1 0 5 2.1 4.9 5.2-.1 3.5-2.7 6.4-6.2 6.5v2.8h1.6c.9 0 1.6.7 1.6 1.6v.9H6.6v-.9c0-.9.7-1.6 1.6-1.6h1.6v-2.8c-3.5-.1-6.1-3-6.2-6.5C3.5 4.2 5.4 2.1 8.5 2.1h3M12 16.5v2.8" /></IconBase>
+        };
+
+        const GRID_WIDTH = 8;
+        const GRID_HEIGHT = 15;
+        // Dynamically compute CELL_SIZE so it fits perfectly on all screen aspect ratios
+        const maxW = Math.min(window.innerWidth - 10, 360);
+        const maxH = window.innerHeight - 200; // room for top and bottom HUD
+        const CELL_SIZE = Math.floor(Math.min(maxW / GRID_WIDTH, maxH / GRID_HEIGHT));
+        
+        const SHAPES = [ [[1, 1, 1, 1]], [[1, 1], [1, 1]], [[0, 1, 0], [1, 1, 1]], [[1, 0, 0], [1, 1, 1]], [[0, 0, 1], [1, 1, 1]], [[0, 1, 1], [1, 1, 0]], [[1, 1, 0], [0, 1, 1]] ];
+        const AVATARS = [
+            "assets/avatar_knight.png",
+            "assets/avatar_mage.png", 
+            "assets/avatar_ninja.png", 
+            "assets/avatar_fire.png", 
+            "assets/avatar_alien.png", 
+            "assets/avatar_valkyrie.png"
+        ];
+
+        const TRANSLATIONS = {
+            tr: {
+                start_game: "Savaşa Başla!",
+                next_mission: "Sıradaki Görev",
+                view_path: "Yolu Gör 🗺️",
+                path: "Görev Yolu",
+                close: "Kapat",
+                you_are_here: "Şu An Buradasın",
+                mission: "Görev",
+                words_to_find: "Aranacak Kelimeler",
+                shop: "Mağaza",
+                settings: "Ayarlar",
+                powerups: "Güçlendiriciler",
+                stock: "STOK",
+                bomb: "BOMBA",
+                freeze: "DONDUR",
+                scramble: "KARIŞTIR",
+                control_type: "🕹️ Kontrol Tipi",
+                swipe: "Kaydırma",
+                buttons: "Butonlar",
+                music: "🎵 Oyun Müziği",
+                music_on: "Müzik AÇIK",
+                music_off: "Müzik KAPALI",
+                language: "🌐 Dil Seçimi",
+                reset_data: "Tüm Verileri Sıfırla",
+                choose_hero: "Kahramanını Seç",
+                enter_name: "Adınızı Giriniz",
+                start_adventure: "Maceraya Başla",
+                free_gold: "ÜCRETSİZ ALTIN",
+                watch_video: "VİDEO İZLE +100 ALTIN",
+                level_win: "ZAFER!",
+                level_lose: "BÖLÜM BAŞARISIZ",
+                score: "Puan",
+                target: "Hedef",
+                next_level: "Sonraki Bölüm",
+                try_again: "Tekrar Dene",
+                main_menu: "Ana Menü",
+                tutorial_title: "Hoş Geldin Savaşçı!",
+                tutorial_text: "WordTris'e hoş geldin. Kelimeleri bularak blokları yok et, özel güçleri kullan ve seviyeleri geç. Hazır mısın?",
+                tutorial_step1: "Ana amaç yukarıdan düşen harfleri birleştirip hedef kelimeleri oluşturmaktır. Kelimeler yatay veya dikey olabilir!",
+                tutorial_step2: "Bomba patlat, Dondur ve Karıştır güçlerini kullanarak zor anlarda ekranı temizleyebilirsin.",
+                lvl_forest1: "Orman Şafağı",
+                lvl_forest2: "Ormanın Sırrı",
+                lvl_forest3: "Orman Beyi",
+                lvl_flower1: "Çiçek Bahçesi",
+                lvl_flower2: "Gül Vadisi",
+                lvl_flower3: "Çiçek Lordu",
+                lvl_ocean1: "Kıyı Dalgaları",
+                lvl_ocean2: "Derin Sular",
+                lvl_ocean3: "Okyanus Efendisi",
+                lvl_mountain1: "Dağ Yolu",
+                lvl_mountain2: "Zirveye Tırmanış",
+                lvl_mountain3: "Dağ Ejderi",
+                lvl_galaxy1: "Yıldız Tozu",
+                lvl_galaxy2: "Karanlık Nebula",
+                lvl_galaxy3: "Evrenin Efendisi",
+                w_forest: ["ELMA", "AĞAÇ", "GÜL", "KAR"],
+                w_flower: ["GÜL", "LALE", "GECE", "AÇIK"],
+                w_ocean: ["DALGA", "BALIK", "SU", "KUM"],
+                w_mountain: ["KAR", "ZİRVE", "TAŞ", "DAĞLAR"],
+                w_galaxy: ["YILDIZ", "AY", "IŞIK", "UZAY"],
+                language_tr: "Türkçe",
+                language_en: "English",
+                language_ar: "العربية",
+            },
+            en: {
+                start_game: "Start Battle!",
+                next_mission: "Next Mission",
+                view_path: "View Path 🗺️",
+                path: "Mission Path",
+                close: "Close",
+                you_are_here: "You Are Here",
+                mission: "Mission",
+                words_to_find: "Words to Find",
+                shop: "Shop",
+                settings: "Settings",
+                powerups: "Power-ups",
+                stock: "STOCK",
+                bomb: "BOMB",
+                freeze: "FREEZE",
+                scramble: "SHUFFLE",
+                control_type: "🕹️ Control Type",
+                swipe: "Swipe",
+                buttons: "Buttons",
+                music: "🎵 Game Music",
+                music_on: "Music ON",
+                music_off: "Music OFF",
+                language: "🌐 Language",
+                reset_data: "Reset All Data",
+                choose_hero: "Choose Your Hero",
+                enter_name: "Enter Your Name",
+                start_adventure: "Start Adventure",
+                free_gold: "FREE GOLD",
+                watch_video: "WATCH VIDEO +100 GOLD",
+                level_win: "VICTORY!",
+                level_lose: "MISSION FAILED",
+                score: "Score",
+                target: "Target",
+                next_level: "Next Level",
+                try_again: "Try Again",
+                main_menu: "Main Menu",
+                tutorial_title: "Welcome Warrior!",
+                tutorial_text: "Welcome to WordTris. Destroy blocks by finding words, use special powers to clear levels. Are you ready?",
+                tutorial_step1: "Combine falling letters to form target words. Words can be horizontal or vertical!",
+                tutorial_step2: "Use Bomb, Freeze, and Shuffle powers to clear the screen in tough moments.",
+                lvl_forest1: "Forest Dawn",
+                lvl_forest2: "Forest Secret",
+                lvl_forest3: "Forest Lord",
+                lvl_flower1: "Flower Garden",
+                lvl_flower2: "Rose Valley",
+                lvl_flower3: "Flower Lord",
+                lvl_ocean1: "Shore Waves",
+                lvl_ocean2: "Deep Waters",
+                lvl_ocean3: "Ocean Master",
+                lvl_mountain1: "Mountain Trail",
+                lvl_mountain2: "Summit Climb",
+                lvl_mountain3: "Mountain Dragon",
+                lvl_galaxy1: "Stardust",
+                lvl_galaxy2: "Dark Nebula",
+                lvl_galaxy3: "Universe Lord",
+                w_forest: ["TREE", "LEAF", "BIRD", "ACORN"],
+                w_flower: ["ROSE", "TULIP", "BEE", "SEED"],
+                w_ocean: ["WAVE", "FISH", "SAND", "TIDE"],
+                w_mountain: ["SNOW", "PEAK", "ROCK", "MIST"],
+                w_galaxy: ["STAR", "MOON", "SUN", "COMET"],
+                language_tr: "Türkçe",
+                language_en: "English",
+                language_ar: "العربية",
+            },
+            ar: {
+                start_game: "ابدأ المعركة!",
+                next_mission: "المهمة التالية",
+                view_path: "عرض المسار 🗺️",
+                path: "مسار المهمة",
+                close: "إغلاق",
+                you_are_here: "أنت هنا",
+                mission: "مهمة",
+                words_to_find: "كلمات للبحث",
+                shop: "متجر",
+                settings: "إعدادات",
+                powerups: "معززات",
+                stock: "مخزون",
+                bomb: "قنبلة",
+                freeze: "تجميد",
+                scramble: "خلط",
+                control_type: "🕹️ نوع التحكم",
+                swipe: "تمرير",
+                buttons: "أزرار",
+                music: "🎵 موسيقى اللعبة",
+                music_on: "موسيقى تعمل",
+                music_off: "موسيقى متوقفة",
+                language: "🌐 اللغة",
+                reset_data: "إعادة تعيين البيانات",
+                choose_hero: "اختر بطلك",
+                enter_name: "أدخل اسمك",
+                start_adventure: "ابدأ المغامرة",
+                free_gold: "ذهب مجاني",
+                watch_video: "شاهد فيديو +100 ذهب",
+                level_win: "انتصار!",
+                level_lose: "فشلت المهمة",
+                score: "نقاط",
+                target: "هدف",
+                next_level: "المستوى التالي",
+                try_again: "حاول مرة أخرى",
+                main_menu: "القائمة الرئيسية",
+                tutorial_title: "مرحباً أيها المحارب!",
+                tutorial_text: "مرحباً بك في ووردتريس. دمر الكتل بالعثور على الكلمات.",
+                tutorial_step1: "ادمج الحروف المتساقطة لتكوين الكلمات المستهدفة. يمكن أن تكون الكلمات أفقية أو عمودية!",
+                tutorial_step2: "استخدم قوى القنبلة، التجميد، والخلط لتنظيف الشاشة.",
+                lvl_forest1: "فجر الغابة",
+                lvl_forest2: "سر الغابة",
+                lvl_forest3: "سيد الغابة",
+                lvl_flower1: "حديقة الزهور",
+                lvl_flower2: "وادي الورد",
+                lvl_flower3: "ملك الزهور",
+                lvl_ocean1: "أمواج الشاطئ",
+                lvl_ocean2: "المياه العميقة",
+                lvl_ocean3: "سيد المحيط",
+                lvl_mountain1: "درب الجبل",
+                lvl_mountain2: "تسلق القمة",
+                lvl_mountain3: "تنين الجبل",
+                lvl_galaxy1: "غبار النجوم",
+                lvl_galaxy2: "السديم المظلم",
+                lvl_galaxy3: "سيد الكون",
+                w_forest: ["شجر", "عصفور", "غابة", "ظل"],
+                w_flower: ["وردة", "زهرة", "نحل", "بذر"],
+                w_ocean: ["موجة", "سمك", "رمل", "مد"],
+                w_mountain: ["ثلج", "قمة", "صخر", "ضباب"],
+                w_galaxy: ["نجمة", "قمر", "شمس", "كون"],
+                language_tr: "Türkçe",
+                language_en: "English",
+                language_ar: "العربية",
+            }
+        };
+
+        const LEVELS = [
+            // World 1: Forest
+            { id: 1,  name: "lvl_forest1",   target: 150,  bg: "from-green-900 to-green-700",   wordsKey: "w_forest",   img: "🌱", effect: "🍃" },
+            { id: 2,  name: "lvl_forest2",   target: 300,  bg: "from-green-800 to-emerald-600",  wordsKey: "w_forest",   img: "🌲", effect: "🌿" },
+            { id: 3,  name: "lvl_forest3",   target: 500,  bg: "from-emerald-900 to-green-500",  wordsKey: "w_forest",   img: "🦌", effect: "🍀" },
+            // World 2: Flower
+            { id: 4,  name: "lvl_flower1",   target: 700,  bg: "from-pink-900 to-pink-600",     wordsKey: "w_flower",   img: "🌸", effect: "🌺" },
+            { id: 5,  name: "lvl_flower2",   target: 950,  bg: "from-rose-900 to-purple-600",    wordsKey: "w_flower",   img: "🌹", effect: "🌼" },
+            { id: 6,  name: "lvl_flower3",   target: 1250, bg: "from-purple-900 to-pink-700",    wordsKey: "w_flower",   img: "🦋", effect: "🐝" },
+            // World 3: Ocean
+            { id: 7,  name: "lvl_ocean1",    target: 1600, bg: "from-blue-900 to-cyan-700",     wordsKey: "w_ocean",    img: "🌊", effect: "🐚" },
+            { id: 8,  name: "lvl_ocean2",    target: 2000, bg: "from-cyan-900 to-blue-600",     wordsKey: "w_ocean",    img: "🐬", effect: "🐠" },
+            { id: 9,  name: "lvl_ocean3",    target: 2500, bg: "from-teal-900 to-blue-800",     wordsKey: "w_ocean",    img: "🦈", effect: "🐙" },
+            // World 4: Mountain
+            { id: 10, name: "lvl_mountain1", target: 3000, bg: "from-gray-800 to-slate-600",    wordsKey: "w_mountain", img: "🦅", effect: "⛄" },
+            { id: 11, name: "lvl_mountain2", target: 3700, bg: "from-slate-900 to-gray-700",    wordsKey: "w_mountain", img: "⛰️", effect: "🌨️" },
+            { id: 12, name: "lvl_mountain3", target: 4500, bg: "from-zinc-900 to-slate-800",    wordsKey: "w_mountain", img: "🐉", effect: "⚡" },
+            // World 5: Galaxy
+            { id: 13, name: "lvl_galaxy1",   target: 5500, bg: "from-indigo-900 to-violet-800", wordsKey: "w_galaxy",   img: "✨", effect: "⭐" },
+            { id: 14, name: "lvl_galaxy2",   target: 6500, bg: "from-violet-900 to-indigo-950", wordsKey: "w_galaxy",   img: "🌌", effect: "💫" },
+            { id: 15, name: "lvl_galaxy3",   target: 8000, bg: "from-black to-indigo-900",      wordsKey: "w_galaxy",   img: "🚀", effect: "🌟" },
+        ];
+
+        const App = () => {
+            const load = (k, d) => { try { const s=localStorage.getItem(k); return s?JSON.parse(s):d; }catch{return d;} };
+            
+            const [language, setLanguage] = useState(() => load('clash_lang', 'tr'));
+            const t = (key) => TRANSLATIONS[language][key] || key;
+            
+            const [view, setView] = useState('menu');
+            const [coins, setCoins] = useState(() => load('clash_coins', 100));
+            const [inventory, setInventory] = useState(() => load('clash_inv', { bomb: 2, freeze: 2, shuffle: 2 }));
+            const [username, setUsername] = useState(() => load('clash_name', ''));
+            const [avatar, setAvatar] = useState(() => load('clash_avatar', AVATARS[0]));
+            const [progress, setProgress] = useState(() => load('clash_progress', 0));
+            const [controlType, setControlType] = useState(() => load('clash_controls', 'swipe')); // 'swipe' or 'buttons'
+            const [isPlayConnected, setIsPlayConnected] = useState(() => load('clash_playconnect', false));
+
+            useEffect(() => { 
+                document.getElementById('loader').style.display = 'none'; 
+                setView('splash');
+                
+                const initAdMob = async () => {
+                    const AdMob = window.Capacitor?.Plugins?.AdMob;
+                    if (AdMob) {
+                        try {
+                            await AdMob.initialize({
+                                initializeForTesting: true,
+                            });
+                        } catch (e) { console.error("AdMob Init Error: ", e); }
+                    }
+                };
+                initAdMob();
+
+                setTimeout(() => {
+                    if(!username) setView('onboarding'); 
+                    else setView('menu');
+                }, 3000); // Show splash for 3 seconds
+            }, []);
+
+            // Play music automatically once user has interacted
+            useEffect(() => {
+                const handleInteraction = () => { startMusic(); window.removeEventListener('click', handleInteraction); };
+                if(username) window.addEventListener('click', handleInteraction);
+                return () => window.removeEventListener('click', handleInteraction);
+            }, [username]);
+
+            useEffect(() => { localStorage.setItem('clash_lang', JSON.stringify(language)); }, [language]);
+            useEffect(() => { localStorage.setItem('clash_coins', JSON.stringify(coins)); }, [coins]);
+            useEffect(() => { localStorage.setItem('clash_inv', JSON.stringify(inventory)); }, [inventory]);
+            useEffect(() => { localStorage.setItem('clash_name', JSON.stringify(username)); }, [username]);
+            useEffect(() => { localStorage.setItem('clash_avatar', JSON.stringify(avatar)); }, [avatar]);
+            useEffect(() => { localStorage.setItem('clash_progress', JSON.stringify(progress)); }, [progress]);
+            useEffect(() => { localStorage.setItem('clash_controls', JSON.stringify(controlType)); }, [controlType]);
+            useEffect(() => { localStorage.setItem('clash_playconnect', JSON.stringify(isPlayConnected)); }, [isPlayConnected]);
+
+            return (
+                <div className="h-screen w-full bg-gray-900 flex flex-col overflow-hidden select-none">
+                    {view === 'splash' ? (
+                        <div className="flex-1 flex flex-col items-center justify-center" style={{background:'#040c1a'}}>
+                            {/* Ambient neon glows */}
+                            <div style={{position:'absolute',top:'20%',left:'50%',transform:'translateX(-50%)',width:300,height:300,background:'radial-gradient(circle, rgba(0,245,255,0.12) 0%, transparent 70%)',pointerEvents:'none'}}></div>
+                            <div style={{position:'absolute',top:'30%',left:'30%',width:200,height:200,background:'radial-gradient(circle, rgba(255,45,156,0.08) 0%, transparent 70%)',pointerEvents:'none'}}></div>
+                            <h1 className="sahtar-logo text-7xl text-yellow-400 animate-pulse" style={{textShadow:'0 0 30px #ffb300, 0 0 60px rgba(255,179,0,0.4)'}}>WordTris</h1>
+                            <p className="rune-font text-xs mt-4" style={{color:'rgba(0,245,255,0.5)',letterSpacing:'0.4em'}}>KÜTÜPHANE ŞİFRESİ</p>
+                        </div>
+                    ) : view === 'onboarding' ? (
+                        <Onboarding t={t} language={language} setLanguage={setLanguage} onComplete={(name, av) => { setUsername(name); setAvatar(av); setView('tutorial'); playSound('coin'); }} />
+                    ) : view === 'tutorial' ? (
+                        <Tutorial t={t} onComplete={() => setView('menu')} />
+                    ) : (
+                        <>
+                            <div className="hud-panel h-16 flex justify-between items-center px-4 shrink-0 z-20">
+                                <div className="flex items-center gap-3">
+                                    <div style={{position:'relative'}}>
+                                        <img src={avatar} className="w-10 h-10 rounded-full object-cover" style={{border:'2px solid rgba(0,245,255,0.5)',boxShadow:'0 0 10px rgba(0,245,255,0.3)'}} />
+                                        <div style={{position:'absolute',inset:0,borderRadius:'50%',background:'linear-gradient(135deg,rgba(0,245,255,0.1),transparent)',pointerEvents:'none'}}></div>
+                                    </div>
+                                    <div>
+                                        <p className="rune-font text-[10px] leading-none uppercase" style={{color:'rgba(0,245,255,0.7)',letterSpacing:'0.15em'}}>{t('mission')} {progress + 1}</p>
+                                        <p className="rune-font text-sm font-bold leading-none text-white mt-0.5">{username}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl" style={{background:'rgba(255,179,0,0.1)',border:'1px solid rgba(255,179,0,0.3)',boxShadow:'0 0 12px rgba(255,179,0,0.15)'}}>
+                                    <span style={{fontSize:14}}>🪙</span>
+                                    <span className="rune-font font-bold text-base" style={{color:'#ffb300'}}>{coins}</span>
+                                </div>
+                            </div>
+                            <div className="flex-1 overflow-y-auto relative">
+                                {view === 'menu' && <MainMenu t={t} onStart={(lvl) => setView({ name: 'game', level: lvl })} levels={LEVELS} progress={progress} />}
+                                {view === 'shop' && <Shop t={t} coins={coins} setCoins={setCoins} inventory={inventory} setInventory={setInventory} />}
+                                {view === 'settings' && <SettingsScreen t={t} language={language} setLanguage={setLanguage} controlType={controlType} setControlType={setControlType} isPlayConnected={isPlayConnected} setIsPlayConnected={setIsPlayConnected} onReset={() => {localStorage.clear(); window.location.reload();}} />}
+                                {view === 'leaderboard' && <Leaderboard t={t} progress={progress} username={username} avatar={avatar} isPlayConnected={isPlayConnected} />}
+                                {view.name === 'game' && (
+                                    <Game 
+                                        t={t}
+                                        level={view.level} inventory={inventory} setInventory={setInventory} 
+                                        controlType={controlType}
+                                        addCoins={(n) => setCoins(c => c + n)} 
+                                        onBack={async () => {
+                                            if (Math.random() > 0.5 && window.Capacitor?.Plugins?.AdMob) {
+                                                try { await window.Capacitor.Plugins.AdMob.prepareInterstitial({ adId: "ca-app-pub-3940256099942544/1033173712", isTesting: true }); await window.Capacitor.Plugins.AdMob.showInterstitial(); } catch(e){}
+                                            }
+                                            setView('menu'); 
+                                        }} 
+                                        onWin={async () => { 
+                                            playSound('win'); 
+                                            setCoins(c => c + 50); 
+                                            if (Math.random() > 0.5 && window.Capacitor?.Plugins?.AdMob) {
+                                                try { await window.Capacitor.Plugins.AdMob.prepareInterstitial({ adId: "ca-app-pub-3940256099942544/1033173712", isTesting: true }); await window.Capacitor.Plugins.AdMob.showInterstitial(); } catch(e){}
+                                            }
+                                            if(progress < LEVELS.length - 1) setProgress(p => p+1); 
+                                            setView('menu'); 
+                                        }} 
+                                    />
+                                )}
+                            </div>
+                            {view.name !== 'game' && (
+                                <div className="h-20 nav-bar flex justify-around items-center shrink-0 pb-2">
+                                    <NavButton icon={Icons.Shop} label={t('shop')} active={view === 'shop'} onClick={() => setView('shop')} />
+                                    <NavButton icon={Icons.Trophy} label={t('leaderboard') || 'Liderlik'} active={view === 'leaderboard'} onClick={() => setView('leaderboard')} />
+                                    <NavButton icon={Icons.Home} label={t('mission')} active={view === 'menu'} onClick={() => setView('menu')} isMain />
+                                    <NavButton icon={Icons.Settings} label={t('settings')} active={view === 'settings'} onClick={() => setView('settings')} />
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+            );
+        };
+
+        const Onboarding = ({ t, language, setLanguage, onComplete }) => {
+            const [name, setName] = useState('');
+            const [selAv, setSelAv] = useState(AVATARS[0]);
+            return (
+                <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-b from-blue-900 to-gray-900 overflow-y-auto">
+                    
+                    <h1 className="sahtar-logo text-6xl text-yellow-400 mb-2 drop-shadow-[0_0_15px_rgba(255,215,0,0.5)]">WordTris</h1>
+                    <p className="rune-font text-[10px] mb-6" style={{color:'rgba(0,245,255,0.5)',letterSpacing:'0.3em'}}>KÜTÜPHANE ŞİFRESİ</p>
+                    <h1 className="clash-font text-2xl text-yellow-400 mb-6 drop-shadow-xl uppercase text-center">{t('choose_hero')}</h1>
+                    <div className="grid grid-cols-3 gap-4 mb-8">
+                        {AVATARS.map(av => (
+                            <img key={av} src={av} onClick={() => {setSelAv(av); playSound('click');}} className={`w-20 h-20 object-cover cursor-pointer rounded-2xl border-4 transition-all ${selAv === av ? 'border-yellow-400 bg-blue-700 scale-110 shadow-[0_0_20px_rgba(255,215,0,0.8)]' : 'border-white/10 shadow-lg opacity-80'}`} />
+                        ))}
+                    </div>
+                    <input type="text" maxLength="12" value={name} onChange={e => setName(e.target.value)} placeholder={t('enter_name')} className="bg-black/50 border-b-4 border-yellow-500 text-white text-center text-xl p-4 w-full max-w-xs rounded-xl outline-none mb-6 font-bold" />
+                    <button onClick={() => name && onComplete(name, selAv)} className="bg-green-500 text-white font-black py-4 px-12 rounded-2xl border-b-8 border-green-700 active:border-b-0 active:translate-y-2 text-xl w-full max-w-xs transition-all uppercase shadow-[0_10px_20px_rgba(0,0,0,0.5)]">{t('start_adventure')}</button>
+                </div>
+            );
+        };
+        
+        const Tutorial = ({ t, onComplete }) => {
+            const [step, setStep] = useState(0);
+            const steps = [
+                { icon: '🎮', text: t('tutorial_text') },
+                { icon: '🔤', text: t('tutorial_step1') },
+                { icon: '💥', text: t('tutorial_step2') },
+            ];
+            const cur = steps[step];
+            return (
+                <div className="flex-1 flex flex-col items-center justify-end bg-gradient-to-b from-gray-950 via-indigo-950 to-gray-950 relative overflow-hidden">
+                    {/* Background glow */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-72 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+                    {/* Floating guide character */}
+                    <img src="assets/avatar_mage.png" className="w-28 h-28 drop-shadow-[0_0_20px_rgba(167,139,250,0.9)] z-10 absolute top-8 left-1/2 -translate-x-1/2 animate-bounce" />
+                    {/* Card */}
+                    <div className="w-full bg-gray-900/95 rounded-t-[2.5rem] p-7 pb-10 border-t-2 border-indigo-500/40 shadow-[0_-10px_40px_rgba(99,102,241,0.2)] z-20">
+                        <div className="flex justify-center gap-2 mb-5">
+                            {steps.map((_, i) => (
+                                <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? 'w-8 bg-yellow-400' : i < step ? 'w-5 bg-yellow-400/50' : 'w-5 bg-gray-700'}`}></div>
+                            ))}
+                        </div>
+                        <div className="text-center mb-5">
+                            <div className="text-5xl mb-3">{cur.icon}</div>
+                            <p className="text-white text-base leading-relaxed font-medium">{cur.text}</p>
+                        </div>
+                        <button onClick={() => { playSound('click'); if(step < 2) setStep(s => s+1); else onComplete(); }}
+                            className="w-full clash-btn bg-gradient-to-t from-yellow-600 to-yellow-400 text-[#3a2000] font-black py-4 rounded-2xl text-lg border-b-4 border-yellow-800 shadow-xl uppercase">
+                            {step < 2 ? 'Devam →' : t('start_game')}
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+
+        const MainMenu = ({ t, onStart, levels, progress }) => {
+            const [showPath, setShowPath] = useState(false);
+            const currentLevel = levels[Math.min(progress, levels.length - 1)];
+            const isCompleted = progress >= levels.length;
+            
+            const particles = Array.from({length: 12}).map((_, i) => ({
+                id: i, left: (i * 8.5) + '%', delay: (i * 0.4) + 's', duration: (6 + i * 0.3) + 's'
+            }));
+
+            // World groupings for path view
+            const worlds = [
+                { name: '🌲 Orman', range: [0,2], bg: 'from-green-900/60 to-emerald-800/40' },
+                { name: '🌸 Çiçek', range: [3,5], bg: 'from-pink-900/60 to-rose-800/40' },
+                { name: '🌊 Okyanus', range: [6,8], bg: 'from-blue-900/60 to-cyan-800/40' },
+                { name: '🏔️ Dağlar', range: [9,11], bg: 'from-gray-800/60 to-slate-700/40' },
+                { name: '🌌 Galaksi', range: [12,14], bg: 'from-indigo-900/60 to-violet-800/40' },
+            ];
+
+            if (showPath) {
+                return (
+                    <div className="h-full overflow-y-auto bg-gradient-to-b from-gray-950 to-gray-900">
+                        <div className="sticky top-0 z-20 bg-gray-950/95 backdrop-blur-md border-b border-white/10 px-4 py-3 flex justify-between items-center">
+                            <h1 className="clash-font text-xl text-yellow-400">{t('path')}</h1>
+                            <button onClick={() => { playSound('click'); setShowPath(false); }}
+                                className="bg-gray-700 px-4 py-2 rounded-xl text-white font-black border-b-2 border-gray-900 text-xs uppercase">{t('close')}</button>
+                        </div>
+                        <div className="p-4 space-y-6 pb-32">
+                            {worlds.map(world => (
+                                <div key={world.name} className={`rounded-3xl border border-white/10 bg-gradient-to-br ${world.bg} overflow-hidden`}>
+                                    <div className="px-4 pt-4 pb-2">
+                                        <h2 className="clash-font text-lg text-white/90 mb-3">{world.name}</h2>
+                                    </div>
+                                    <div className="px-3 pb-3 space-y-2">
+                                        {levels.slice(world.range[0], world.range[1] + 1).map((lvl, i) => {
+                                            const index = world.range[0] + i;
+                                            const isLocked = index > progress;
+                                            const isActive = index === Math.min(progress, levels.length - 1);
+                                            return (
+                                                <div key={lvl.id} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${isActive ? 'bg-yellow-400/15 border-yellow-400/50 shadow-[0_0_12px_rgba(250,204,21,0.15)]' : isLocked ? 'bg-black/20 border-white/5 opacity-60' : 'bg-black/30 border-white/10'}`}>
+                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 ${isLocked ? 'bg-gray-700' : 'bg-black/40'}`}>
+                                                        {isLocked ? '🔒' : lvl.img}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className={`text-[10px] font-bold uppercase tracking-wider ${isActive ? 'text-yellow-400' : 'text-white/40'}`}>{t('mission')} {lvl.id}</p>
+                                                        <p className="clash-font text-sm text-white truncate">{t(lvl.name)}</p>
+                                                        {isActive && <p className="text-[9px] text-yellow-300 font-bold animate-pulse mt-0.5">▶ {t('you_are_here')}</p>}
+                                                    </div>
+                                                    {!isLocked && (
+                                                        <button onClick={() => { playSound('click'); setShowPath(false); onStart(lvl); }}
+                                                            className={`clash-btn px-3 py-2 rounded-xl font-black text-xs uppercase flex-shrink-0 ${isActive ? 'bg-green-500 border-green-800 text-white' : 'bg-gray-600 border-gray-800 text-gray-300'}`}>
+                                                            ▶
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="flex flex-col items-center justify-center h-full pb-6 relative overflow-hidden bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950">
+                    {/* Ambient particles */}
+                    <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+                        {particles.map(p => (
+                            <div key={p.id} className="particle text-3xl" style={{left: p.left, animationDelay: p.delay, animationDuration: p.duration, opacity: 0.3}}>
+                                {currentLevel.effect}
+                            </div>
+                        ))}
+                    </div>
+                    {/* Background glow */}
+                    <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full blur-3xl opacity-15 pointer-events-none bg-gradient-to-br ${currentLevel.bg}`}></div>
+
+                    <div className="z-10 w-full max-w-sm px-4">
+                        {/* Top label */}
+                        <div className="text-center mb-4">
+                            <p className="text-xs font-black text-white/40 uppercase tracking-[0.25em]">{t('next_mission')}</p>
+                        </div>
+
+                        {/* Level Card */}
+                        <div className={`rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-gradient-to-br ${currentLevel.bg} relative`}>
+                            {/* Shine overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+                            
+                            <div className="relative p-6">
+                                {/* Level header */}
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="bg-black/40 px-3 py-1 rounded-full border border-white/10">
+                                        <p className="text-[10px] font-black text-yellow-300 uppercase tracking-widest">{t('mission')} {currentLevel.id}</p>
+                                    </div>
+                                    <div className="text-5xl drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">{currentLevel.img}</div>
+                                </div>
+
+                                <h2 className="clash-font text-2xl text-white mb-4 drop-shadow-md">{t(currentLevel.name)}</h2>
+
+                                {/* Words to find */}
+                                <div className="bg-black/35 rounded-2xl p-3 mb-4 border border-white/10">
+                                    <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-2">{t('words_to_find')}</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {t(currentLevel.wordsKey).map(w => (
+                                            <span key={w} className="bg-white/15 border border-white/20 px-3 py-1.5 rounded-xl font-black text-white text-sm shadow-inner tracking-wider">
+                                                {w}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Target score */}
+                                <div className="flex items-center justify-between text-sm mb-5">
+                                    <div className="flex items-center gap-1.5 bg-black/30 px-3 py-1.5 rounded-full border border-white/10">
+                                        <span className="text-yellow-400">🏆</span>
+                                        <span className="font-black text-white text-xs">{t('target')}: {currentLevel.target}</span>
+                                    </div>
+                                    <div className="text-yellow-300 text-xs font-bold">
+                                        {'⭐'.repeat(3)}
+                                    </div>
+                                </div>
+
+                                {/* Buttons */}
+                                <button onClick={() => { playSound('click'); setShowPath(true); }}
+                                    className="w-full clash-btn bg-black/40 text-white font-black py-3 mb-2 rounded-2xl border-b-[4px] border-black/60 text-sm shadow-md uppercase tracking-wide border border-white/10">
+                                    {t('view_path')}
+                                </button>
+                                <button onClick={() => { playSound('click'); onStart(currentLevel); }}
+                                    className="w-full clash-btn bg-gradient-to-t from-green-700 to-green-500 text-white font-black py-4 rounded-2xl border-b-[6px] border-green-900 text-xl shadow-xl uppercase tracking-wider">
+                                    {t('start_game')}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Progress indicator */}
+                        <div className="mt-4 flex items-center gap-2">
+                            <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-yellow-500 to-green-400 rounded-full progress-bar-fill" style={{width: Math.min(100, (progress / levels.length) * 100) + '%'}}></div>
+                            </div>
+                            <p className="text-xs font-bold text-white/40">{progress}/{levels.length}</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Shop = ({ t, coins, setCoins, inventory, setInventory }) => {
+            const [adState, setAdState] = useState(null);
+            const [buying, setBuying] = useState(null);
+            const watchAd = async () => {
+                const AdMob = window.Capacitor?.Plugins?.AdMob;
+                if (AdMob) {
+                    try {
+                        setAdState('watching');
+                        await AdMob.prepareRewardVideoAd({ adId: "ca-app-pub-3940256099942544/5224354917", isTesting: true });
+                        await AdMob.showRewardVideoAd();
+                        setCoins(prev => prev + 100);
+                        setAdState(null);
+                        playSound('coin');
+                    } catch (e) {
+                        console.error(e);
+                        setAdState(null);
+                    }
+                } else {
+                    setAdState('watching');
+                    setTimeout(() => {
+                        setCoins(prev => prev + 100);
+                        setAdState(null);
+                        playSound('coin');
+                    }, 3000);
+                }
+            };
+            const buy = (id, price) => {
+                if (coins >= price) {
+                    setCoins(prev => prev - price);
+                    setInventory(prev => ({ ...prev, [id]: prev[id] + 1 }));
+                    playSound('coin');
+                    setBuying(id);
+                    setTimeout(() => setBuying(null), 600);
+                }
+            };
+            const items = [
+                { id: 'bomb',    icon: '💣', price: 200, color: 'from-red-600 to-orange-700', border: 'border-red-900', label: t('bomb'), desc: '3×3 alan temizler' },
+                { id: 'freeze',  icon: '❄️', price: 100, color: 'from-cyan-500 to-blue-700',  border: 'border-blue-900', label: t('freeze'), desc: '4 sn oyunu durdurur' },
+                { id: 'shuffle', icon: '🔀', price: 100, color: 'from-purple-500 to-indigo-700', border: 'border-indigo-900', label: t('scramble'), desc: 'Parçayı yeniler' },
+            ];
+            return (
+                <div className="h-full overflow-y-auto bg-gradient-to-b from-gray-950 to-gray-900">
+                    <div className="p-4 pb-28 space-y-4">
+                        {/* Header */}
+                        <div className="text-center pt-2 pb-1">
+                            <h1 className="clash-font text-3xl text-white">{t('shop')}</h1>
+                            <p className="text-white/40 text-xs font-bold uppercase tracking-widest">Güçlendiriciler</p>
+                        </div>
+
+                        {/* Watch Ad Banner */}
+                        <div onClick={!adState ? watchAd : null} className={`relative overflow-hidden rounded-3xl p-5 cursor-pointer border border-purple-500/30 bg-gradient-to-br from-purple-900/80 to-pink-900/80 shadow-2xl ${adState ? 'opacity-70' : 'active:scale-95'} transition-all`}>
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent pointer-events-none"></div>
+                            {adState === 'watching' ? (
+                                <div className="flex items-center justify-center gap-3">
+                                    <div className="w-5 h-5 border-2 border-white/60 border-t-white rounded-full animate-spin"></div>
+                                    <p className="clash-font text-lg text-white">Video İzleniyor...</p>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="clash-font text-xl text-white">{t('free_gold')}</p>
+                                        <p className="text-purple-200 text-sm font-bold mt-0.5">{t('watch_video')}</p>
+                                    </div>
+                                    <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center border border-white/30">
+                                        <Icons.Video size={28} color="white" />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Items grid */}
+                        <div className="grid grid-cols-1 gap-3">
+                            {items.map(item => {
+                                const canBuy = coins >= item.price;
+                                const isAnimating = buying === item.id;
+                                return (
+                                    <div key={item.id} className={`flex items-center gap-4 p-4 rounded-3xl border bg-gray-800/80 border-white/10 shadow-xl transition-all ${isAnimating ? 'scale-95' : ''}`}>
+                                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 bg-gradient-to-br ${item.color} shadow-lg border-b-4 ${item.border}`}>
+                                            {item.icon}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                                <p className="clash-font text-white text-base">{item.label}</p>
+                                                <span className="bg-gray-700 text-white/60 text-[9px] font-bold px-2 py-0.5 rounded-full border border-white/10">{t('stock')}: {inventory[item.id]}</span>
+                                            </div>
+                                            <p className="text-white/40 text-xs font-medium">{item.desc}</p>
+                                        </div>
+                                        <button onClick={() => buy(item.id, item.price)} disabled={!canBuy}
+                                            className={`flex-shrink-0 clash-btn py-2 px-4 rounded-2xl font-black text-sm border-b-4 ${canBuy ? 'bg-gradient-to-t from-yellow-600 to-yellow-400 border-yellow-900 text-[#3a2000]' : 'bg-gray-700 border-gray-900 text-gray-500 opacity-50 cursor-not-allowed'}`}>
+                                            {item.price} 🟡
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Game = ({ t, level, inventory, setInventory, controlType, addCoins, onBack, onWin }) => {
+
+            const [grid, setGrid] = useState(Array(GRID_HEIGHT).fill(null).map(() => Array(GRID_WIDTH).fill(null).map(() => ({ letter: null }))));
+            const [piece, setPiece] = useState(null);
+            const [pos, setPos] = useState({ x: 3, y: 0 });
+            const [score, setScore] = useState(0);
+            const [over, setOver] = useState(false);
+            const [win, setWin] = useState(false);
+            const [isTargeting, setIsTargeting] = useState(false);
+            const [isFrozen, setIsFrozen] = useState(false); // freeze skill: separate from targeting
+            const [vfx, setVfx] = useState({ shake: false, scramble: false });
+            const [floatingTexts, setFloatingTexts] = useState([]);
+            const [explosions, setExplosions] = useState([]);
+            const [comboDisplay, setComboDisplay] = useState(null);
+            // Use refs for combo to avoid stale closure bug
+            const comboRef = useRef(1);
+            const lastMatchTimeRef = useRef(0);
+            const gameLoopRef = useRef(null);
+            const touchRef = useRef(null);
+            const textIdCounter = useRef(0);
+            const explIdCounter = useRef(0);
+            const gridRef = useRef(grid);
+            useEffect(() => { gridRef.current = grid; }, [grid]);
+
+            // Hardware back button support
+            useEffect(() => {
+                const App = window.Capacitor?.Plugins?.App;
+                if (App) {
+                    const handler = App.addListener('backButton', onBack);
+                    return () => handler.then(h => h.remove()).catch(()=>{});
+                }
+            }, []);
+
+            const getDynamicLetters = () => {
+                const words = t(level.wordsKey) || [];
+                if (!words.length) return 'SAHTAR'.split('');
+                
+                const wordLetters = words.join('').split('').filter(c => c.trim());
+                const uniqueWordLetters = [...new Set(wordLetters)];
+                
+                const weightedPool = [];
+                
+                // Target letters appear VERY frequently (weight: 20 each)
+                uniqueWordLetters.forEach(l => {
+                    for (let i = 0; i < 20; i++) weightedPool.push(l);
+                });
+                
+                // Decoy letters appear very rarely (only 1 or 2 in the entire pool)
+                const allDecoys = 'ABCDEFGHIJKLMNOPRSTUVYZ'.split('').filter(c => !uniqueWordLetters.includes(c));
+                const decoyCount = 1; // Extremely low decoy rate
+                for (let i = 0; i < decoyCount; i++) {
+                    const decoy = allDecoys[Math.floor(Math.random() * allDecoys.length)];
+                    weightedPool.push(decoy);
+                }
+                
+                return weightedPool;
+            };
+
+            const computeGhost = (p, pPos) => {
+                if (!p) return null;
+                let ghostY = pPos.y;
+                while (true) {
+                    const testPos = { x: pPos.x, y: ghostY + 1 };
+                    let blocked = false;
+                    for (let py = 0; py < p.length; py++) {
+                        for (let px = 0; px < p[py].length; px++) {
+                            if (!p[py][px]) continue;
+                            const ny = testPos.y + py, nx = testPos.x + px;
+                            if (nx < 0 || nx >= GRID_WIDTH || ny >= GRID_HEIGHT) { blocked = true; break; }
+                            if (ny >= 0 && gridRef.current[ny][nx].letter) { blocked = true; break; }
+                        }
+                        if (blocked) break;
+                    }
+                    if (blocked) break;
+                    ghostY++;
+                }
+                return ghostY;
+            };
+
+
+            const spawn = () => {
+                if(over || win) return;
+                const availableLetters = getDynamicLetters();
+                const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+                // 5% chance joker, 5% chance multiplier, rest normal
+                const roll = Math.random();
+                const blockType = roll < 0.05 ? 'joker' : roll < 0.10 ? 'multiplier' : 'normal';
+                const newPiece = shape.map(row => row.map(cell => cell ? { 
+                    letter: blockType === 'joker' ? '★' : blockType === 'multiplier' ? '2×' : availableLetters[Math.floor(Math.random() * availableLetters.length)],
+                    type: blockType
+                } : null));
+                setPiece(newPiece);
+                const startPos = { x: Math.floor(GRID_WIDTH / 2) - 1, y: -1 };
+                if(checkCollision(newPiece, startPos)) setOver(true);
+                else setPos(startPos);
+            };
+
+            useEffect(() => { spawn(); }, []);
+
+            const checkCollision = (p, pPos) => {
+                for(let y=0; y<p.length; y++){
+                    for(let x=0; x<p[y].length; x++){
+                        if(p[y][x]){
+                            const nx = pPos.x + x, ny = pPos.y + y;
+                            if(nx < 0 || nx >= GRID_WIDTH || ny >= GRID_HEIGHT) return true;
+                            if(ny >= 0 && grid[ny][nx].letter) return true;
+                        }
+                    }
+                }
+                return false;
+            };
+
+            useEffect(() => {
+                if(over || win || isTargeting || isFrozen) return;
+                const speed = Math.max(200, 1000 - (level.id * 50) - (score / 8));
+                gameLoopRef.current = setInterval(() => {
+                    const newPos = {...pos, y: pos.y + 1};
+                    if(!checkCollision(piece, newPos)) setPos(newPos);
+                    else lock();
+                }, speed);
+                return () => clearInterval(gameLoopRef.current);
+            }, [piece, pos, grid, over, win, isTargeting, isFrozen]);
+
+            const lock = () => {
+                const newGrid = grid.map(r => [...r]);
+                piece.forEach((row, y) => row.forEach((cell, x) => {
+                    if(cell && pos.y + y >= 0) {
+                        // Joker becomes the best matching letter
+                        if(cell.type === 'joker') {
+                            const wordLetters = (t(level.wordsKey)||[]).join('').split('').filter(c=>c.trim());
+                            const needed = wordLetters[Math.floor(Math.random()*wordLetters.length)] || 'A';
+                            newGrid[pos.y + y][pos.x + x] = { letter: needed, type: 'locked' };
+                        } else if(cell.type === 'multiplier') {
+                            // Multiplier clears its spot and adds bonus score
+                            newGrid[pos.y + y][pos.x + x] = { letter: null };
+                            setScore(s => Math.min(s + 30, level.target)); // bonus points
+                        } else {
+                            newGrid[pos.y + y][pos.x + x] = cell;
+                        }
+                    }
+                }));
+                
+                let matchCount = 0;
+                let matchPositions = [];
+
+                // Horizontal matches
+                for(let y=0; y<GRID_HEIGHT; y++){
+                    let rowStr = newGrid[y].map(c => c.letter || ' ').join('');
+                    t(level.wordsKey).forEach(w => {
+                        let idx = rowStr.indexOf(w);
+                        while(idx !== -1){
+                            matchCount++;
+                            matchPositions.push({x: idx + w.length/2, y});
+                            for(let i=0; i<w.length; i++) newGrid[y][idx+i] = {letter: null};
+                            rowStr = newGrid[y].map(c => c.letter || ' ').join('');
+                            idx = rowStr.indexOf(w);
+                        }
+                    });
+                }
+
+                // Vertical matches
+                for(let x=0; x<GRID_WIDTH; x++){
+                    let colStr = newGrid.map(row => row[x].letter || ' ').join('');
+                    t(level.wordsKey).forEach(w => {
+                        let idx = colStr.indexOf(w);
+                        while(idx !== -1){
+                            matchCount++;
+                            matchPositions.push({x, y: idx + w.length/2});
+                            for(let i=0; i<w.length; i++) newGrid[idx+i][x] = {letter: null};
+                            colStr = newGrid.map(row => row[x].letter || ' ').join('');
+                            idx = colStr.indexOf(w);
+                        }
+                    });
+                }
+                
+                if(matchCount > 0) {
+                    playSound('match');
+                    
+                    // Combo logic using refs to avoid stale closure
+                    const now = Date.now();
+                    let newCombo = 1;
+                    if (now - lastMatchTimeRef.current < 5000) {
+                        newCombo = comboRef.current + 1;
+                    }
+                    comboRef.current = newCombo;
+                    lastMatchTimeRef.current = now;
+
+                    const points = matchCount * 50 * newCombo;
+                    setScore(s => {
+                        const ns = s + points;
+                        if(ns >= level.target) setWin(true);
+                        return ns;
+                    });
+                    
+                    // Floating score text
+                    matchPositions.forEach(p => {
+                        const id = textIdCounter.current++;
+                        setFloatingTexts(prev => [...prev, { id, text: `+${points}`, x: p.x, y: p.y }]);
+                        setTimeout(() => setFloatingTexts(prev => prev.filter(t => t.id !== id)), 1000);
+                    });
+
+                    // Explosion particles at match positions
+                    const colors = ['#facc15','#f87171','#34d399','#60a5fa','#e879f9'];
+                    matchPositions.forEach(p => {
+                        const particles = Array.from({length:8}).map((_, i) => {
+                            const angle = (i / 8) * Math.PI * 2;
+                            const dist = 30 + Math.random() * 30;
+                            return {
+                                id: explIdCounter.current++,
+                                x: p.x * CELL_SIZE + CELL_SIZE/2,
+                                y: p.y * CELL_SIZE + CELL_SIZE/2,
+                                tx: Math.cos(angle) * dist,
+                                ty: Math.sin(angle) * dist,
+                                color: colors[Math.floor(Math.random() * colors.length)],
+                                size: 4 + Math.random() * 5
+                            };
+                        });
+                        setExplosions(prev => [...prev, ...particles]);
+                        setTimeout(() => setExplosions(prev => prev.filter(e => !particles.find(p => p.id === e.id))), 700);
+                    });
+
+                    // Show COMBO banner if combo > 1
+                    if (newCombo > 1) {
+                        const cid = textIdCounter.current++;
+                        setComboDisplay({id: cid, text: `🔥 COMBO x${newCombo}!`});
+                        setTimeout(() => setComboDisplay(null), 1800);
+                    }
+
+                    // Gravity  
+                    for(let x=0; x<GRID_WIDTH; x++){
+                        let write = GRID_HEIGHT - 1;
+                        for(let y=GRID_HEIGHT-1; y>=0; y--){
+                            if(newGrid[y][x].letter){
+                                const temp = newGrid[y][x];
+                                newGrid[y][x] = {letter: null};
+                                newGrid[write][x] = temp;
+                                write--;
+                            }
+                        }
+                    }
+                } else {
+                    setScore(s => s + 2);
+                }
+
+                setGrid(newGrid); // FIX: was called twice before
+                spawn();
+            };
+
+
+            const useSkill = (type) => {
+                if(inventory[type] <= 0) return;
+                if(type === 'bomb') { setIsTargeting(true); playSound('click'); }
+                else if(type === 'shuffle' && piece) {
+                    const availableLetters = getDynamicLetters();
+                    const shuffled = piece.map(row => row.map(cell => cell ? { 
+                        letter: availableLetters[Math.floor(Math.random() * availableLetters.length)]
+                    } : null));
+                    setPiece(shuffled);
+                    setInventory(prev => ({...prev, shuffle: prev.shuffle - 1}));
+                    playSound('click');
+                    setVfx(v => ({...v, scramble: true}));
+                    setTimeout(() => setVfx(v => ({...v, scramble: false})), 600);
+                } else if(type === 'freeze') {
+                    // FIX: freeze slows but does NOT set isTargeting (which pauses loop)
+                    setInventory(prev => ({...prev, freeze: prev.freeze - 1}));
+                    playSound('click');
+                    setIsFrozen(true);
+                    setTimeout(() => setIsFrozen(false), 4000);
+                }
+            };
+
+            const handleGridClick = (y, x) => {
+                if(isTargeting){
+                    const newGrid = grid.map(r => [...r]);
+                    for(let dy=-1; dy<=1; dy++){
+                        for(let dx=-1; dx<=1; dx++){
+                            const ny = y+dy, nx = x+dx;
+                            if(ny >=0 && ny < GRID_HEIGHT && nx >=0 && nx < GRID_WIDTH) newGrid[ny][nx] = {letter: null};
+                        }
+                    }
+                    setGrid(newGrid);
+                    setIsTargeting(false);
+                    setInventory(prev => ({...prev, bomb: prev.bomb - 1}));
+                    playSound('match');
+                    setVfx(v => ({...v, shake: true}));
+                    setTimeout(() => setVfx(v => ({...v, shake: false})), 500);
+                }
+            };
+
+            const handleTouch = (e, type) => {
+                if(isTargeting || controlType === 'buttons') return;
+                if(type === 'start') touchRef.current = {x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now()};
+                else if(type === 'end' && touchRef.current){
+                    const dx = e.changedTouches[0].clientX - touchRef.current.x;
+                    const dy = e.changedTouches[0].clientY - touchRef.current.y;
+                    const dt = Date.now() - touchRef.current.t;
+                    if(dt < 220 && Math.abs(dx) < 15 && Math.abs(dy) < 15) {
+                        // Tap = rotate
+                        const rot = piece[0].map((_, i) => piece.map(row => row[i]).reverse());
+                        if(!checkCollision(rot, pos)) setPiece(rot);
+                    } else if(Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 25) {
+                        // Horizontal swipe = move
+                        const nx = pos.x + (dx > 0 ? 1 : -1);
+                        if(!checkCollision(piece, {x: nx, y: pos.y})) setPos(p => ({...p, x: nx}));
+                    } else if(dy > 50) {
+                        // Swipe DOWN = hard drop (FIX: was reversed before)
+                        let ny = pos.y;
+                        while(!checkCollision(piece, {x: pos.x, y: ny + 1})) ny++;
+                        setPos(p => ({...p, y: ny}));
+                    }
+                }
+            };
+
+            const handleButton = (action) => {
+                if(isTargeting || over || win || !piece) return;
+                playSound('click');
+                if(action === 'left') {
+                    const nx = pos.x - 1;
+                    // clamp to grid: checkCollision already handles left wall
+                    if(!checkCollision(piece, {x: nx, y: pos.y})) setPos(p => ({...p, x: nx}));
+                } else if(action === 'right') {
+                    const nx = pos.x + 1;
+                    if(!checkCollision(piece, {x: nx, y: pos.y})) setPos(p => ({...p, x: nx}));
+                } else if(action === 'down') {
+                    // hard drop - ensure piece lands cleanly inside grid
+                    let ny = pos.y;
+                    while(!checkCollision(piece, {x: pos.x, y: ny + 1}) && ny < GRID_HEIGHT - 1) ny++;
+                    setPos(p => ({...p, y: ny}));
+                    setTimeout(() => lock(), 50);
+                } else if(action === 'rotate') {
+                    const rot = piece[0].map((_, i) => piece.map(row => row[i]).reverse());
+                    // Wall-kick: if rotation goes out of bounds, try shifting left/right
+                    if(!checkCollision(rot, pos)) {
+                        setPiece(rot);
+                    } else if(!checkCollision(rot, {x: pos.x - 1, y: pos.y})) {
+                        setPiece(rot); setPos(p => ({...p, x: p.x - 1}));
+                    } else if(!checkCollision(rot, {x: pos.x + 1, y: pos.y})) {
+                        setPiece(rot); setPos(p => ({...p, x: p.x + 1}));
+                    }
+                }
+            };
+
+            const ghostY = piece ? computeGhost(piece, pos) : null;
+            const stars = win ? (score >= level.target * 1.5 ? 3 : score >= level.target * 1.1 ? 2 : 1) : 0;
+            const confettiColors = ['#facc15','#f87171','#34d399','#60a5fa','#e879f9','#fb923c'];
+            const confettiPieces = win ? Array.from({length: 35}).map((_, i) => ({
+                id: i,
+                left: Math.random() * 100 + '%',
+                color: confettiColors[i % confettiColors.length],
+                delay: Math.random() * 1.5 + 's',
+                duration: (1.8 + Math.random() * 1.5) + 's',
+                rotation: Math.random() * 360
+            })) : [];
+
+            return (
+                <div className="h-full relative flex flex-col items-center pt-2 pb-1" style={{background:'#040c1a'}} onTouchStart={e => handleTouch(e, 'start')} onTouchEnd={e => handleTouch(e, 'end')}>
+                    {/* HUD top bar */}
+                    <div className="w-full flex items-center justify-between px-3 mb-2 z-10" style={{maxWidth: GRID_WIDTH * CELL_SIZE + 16}}>
+                        <div className="flex flex-col">
+                            <p className="rune-font text-[9px] uppercase" style={{color:'rgba(0,245,255,0.6)',letterSpacing:'0.2em'}}>{t('target')}</p>
+                            <p className="clash-font text-lg leading-tight text-white">{score} <span style={{color:'#ffb300'}}>/ {level.target}</span></p>
+                        </div>
+                        <div className="flex-1 mx-3 h-2.5 rounded-full overflow-hidden" style={{background:'rgba(0,245,255,0.08)',border:'1px solid rgba(0,245,255,0.15)'}}>
+                            <div className="h-full rounded-full progress-bar-fill" style={{width: Math.min(100, (score / level.target) * 100) + '%', background:'linear-gradient(90deg, #00c2cc, #00f5ff, #ffb300)'}}></div>
+                        </div>
+                        <div className="text-xl">{level.img}</div>
+                    </div>
+
+                    <div className={`game-grid-bg relative rounded-xl border overflow-hidden shadow-2xl transition-all ${isTargeting ? 'targeting-mode' : isFrozen ? 'border-cyan-400' : ''} ${vfx.shake ? 'animate-shake' : ''} ${vfx.scramble ? 'scramble-spin' : ''}`} style={{width: GRID_WIDTH * CELL_SIZE, height: GRID_HEIGHT * CELL_SIZE, border: isTargeting ? '2px solid #ff2d9c' : isFrozen ? '2px solid #00f5ff' : '1px solid rgba(0,245,255,0.12)', boxShadow: isTargeting ? '0 0 20px rgba(255,45,156,0.6)' : isFrozen ? '0 0 20px rgba(0,245,255,0.4)' : '0 0 40px rgba(0,0,0,0.8), inset 0 0 60px rgba(0,245,255,0.02)'}}>
+                        {/* Grid cells */}
+                        {grid.map((r, y) => r.map((c, x) => (
+                            <div key={`${y}-${x}`} 
+                                 onClick={() => handleGridClick(y, x)}
+                                 className={`absolute flex items-center justify-center font-black text-white text-sm ${c.letter ? 'block-locked' : ''}`}
+                                 style={{width: CELL_SIZE, height: CELL_SIZE, left: x*CELL_SIZE, top: y*CELL_SIZE, borderRight:'1px solid rgba(0,245,255,0.04)', borderBottom:'1px solid rgba(0,245,255,0.04)'}}>
+                                <span className={c.letter ? 'drop-shadow-md' : ''} style={{color: c.letter ? '#7ec8ff' : 'transparent', fontSize: CELL_SIZE * 0.42}}>{c.letter}</span>
+                            </div>
+                        )))}
+                        {/* Ghost piece */}
+                        {piece && ghostY !== null && ghostY !== pos.y && piece.map((r, py) => r.map((c, px) => c && (
+                            <div key={`g-${py}-${px}`} className="absolute block-ghost flex items-center justify-center text-sm font-black text-yellow-200/40"
+                                 style={{width: CELL_SIZE, height: CELL_SIZE, left: (pos.x+px)*CELL_SIZE, top: (ghostY+py)*CELL_SIZE}}>
+                                <span>{c.letter}</span>
+                            </div>
+                        )))}
+                        {/* Active piece */}
+                        {piece && piece.map((r, py) => r.map((c, px) => c && (
+                            <div key={`p-${py}-${px}`} 
+                                 className={`absolute flex items-center justify-center font-black text-sm transition-all duration-75 ${
+                                     c.type === 'joker' ? 'block-joker' :
+                                     c.type === 'multiplier' ? 'block-multiplier' :
+                                     'block-active'
+                                 }`}
+                                 style={{width: CELL_SIZE, height: CELL_SIZE, left: (pos.x+px)*CELL_SIZE, top: (pos.y+py)*CELL_SIZE}}>
+                                <span style={{color: c.type === 'joker' ? 'white' : c.type === 'multiplier' ? '#ffb300' : '#663c00', fontSize: CELL_SIZE * 0.38, textShadow: c.type === 'joker' ? '0 0 8px white' : 'none'}}>{c.letter}</span>
+                            </div>
+                        )))}
+                        {/* Freeze overlay */}
+                        {isFrozen && <div className="freeze-overlay"><div className="absolute inset-0 flex items-center justify-center text-4xl opacity-40">❄️</div></div>}
+                        {/* Floating score texts */}
+                        {floatingTexts.map(ft => (
+                            <div key={ft.id} className="absolute floating-text text-yellow-300 font-black text-xl z-20" style={{left: ft.x * CELL_SIZE, top: ft.y * CELL_SIZE, fontFamily:'Titan One'}}>
+                                {ft.text}
+                            </div>
+                        ))}
+                        {/* Word-match explosion particles */}
+                        {explosions.map(e => (
+                            <div key={e.id} className="explosion-particle" style={{left: e.x, top: e.y, width: e.size, height: e.size, background: e.color, '--tx': e.tx+'px', '--ty': e.ty+'px'}}></div>
+                        ))}
+                        {/* Combo banner */}
+                        {comboDisplay && (
+                            <div className="combo-banner clash-font text-3xl text-yellow-300 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]" key={comboDisplay.id}>
+                                {comboDisplay.text}
+                            </div>
+                        )}
+                    </div>
+
+                    {controlType === 'buttons' && (
+                        <div className="flex justify-between w-full mt-2 z-10 gap-2 px-2" style={{maxWidth: GRID_WIDTH * CELL_SIZE + 16}}>
+                            <div className="flex gap-1">
+                                <button onClick={() => handleButton('left')} className="w-12 h-12 bg-blue-700/80 rounded-xl flex items-center justify-center border-b-4 border-blue-900 active:border-b-0 active:translate-y-1 transition-all text-white"><Icons.ArrowLeft size={24}/></button>
+                                <button onClick={() => handleButton('down')} className="w-12 h-12 bg-blue-700/80 rounded-xl flex items-center justify-center border-b-4 border-blue-900 active:border-b-0 active:translate-y-1 transition-all text-white"><Icons.ArrowDown size={24}/></button>
+                                <button onClick={() => handleButton('right')} className="w-12 h-12 bg-blue-700/80 rounded-xl flex items-center justify-center border-b-4 border-blue-900 active:border-b-0 active:translate-y-1 transition-all text-white"><Icons.ArrowRight size={24}/></button>
+                            </div>
+                            <button onClick={() => handleButton('rotate')} className="w-12 h-12 bg-green-600/80 rounded-xl flex items-center justify-center border-b-4 border-green-800 active:border-b-0 active:translate-y-1 transition-all text-white"><Icons.Rotate size={24}/></button>
+                        </div>
+                    )}
+
+                    <div className="flex gap-3 mt-2 z-10">
+                        <SkillBtn icon="💣" label="TÜMÜNÜ" count={inventory.bomb} active={isTargeting} onClick={() => useSkill('bomb')} />
+                        <SkillBtn icon="🔀" label="KARIŞTIR" count={inventory.shuffle} onClick={() => useSkill('shuffle')} />
+                        <SkillBtn icon="❄️" label="DONDUR" count={inventory.freeze} active={isFrozen} onClick={() => useSkill('freeze')} />
+                    </div>
+
+                    {/* Win / Lose Overlay */}
+                    {(over || win) && (
+                        <div className="absolute inset-0 z-50 bg-black/70 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center">
+                            {/* Confetti (win only) */}
+                            {win && confettiPieces.map(c => (
+                                <div key={c.id} className="confetti-piece" style={{left: c.left, background: c.color, animationDelay: c.delay, animationDuration: c.duration, transform: `rotate(${c.rotation}deg)`}}></div>
+                            ))}
+                            <h2 className={`clash-font text-5xl mb-3 drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] ${win ? 'text-green-400' : 'text-red-400'}`}>{win ? t('level_win') : t('level_lose')}</h2>
+                            {/* Star rating */}
+                            {win && (
+                                <div className="flex gap-2 mb-3">
+                                    {[1,2,3].map(s => (
+                                        <span key={s} className="text-4xl star-anim" style={{animationDelay: (s * 0.25) + 's'}}>{s <= stars ? '⭐' : '☆'}</span>
+                                    ))}
+                                </div>
+                            )}
+                            <p className="text-white text-xl mb-8 font-bold bg-black/50 px-6 py-2 rounded-full border border-white/20">{t('score')}: <span className="text-yellow-400">{score}</span></p>
+                            <button onClick={win ? onWin : onBack} className="clash-btn bg-gradient-to-t from-gray-300 to-white text-black clash-font text-xl py-4 px-10 rounded-[2rem] border-b-[8px] border-gray-500 active:border-b-0 w-full max-w-xs shadow-xl uppercase">
+                                {win ? t('next_level') : t('try_again')}
+                            </button>
+                            {win && <button onClick={onBack} className="mt-3 text-white/60 font-bold text-sm underline">{t('main_menu')}</button>}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const SkillBtn = ({ icon, count, onClick, active, label }) => (
+            <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all active:scale-90 ${active ? 'scale-105' : ''}`}>
+                <div className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center text-2xl relative skill-dock ${active ? 'active' : ''}`}>
+                    <span>{icon}</span>
+                    {label && <span className="text-[8px] font-bold mt-0.5" style={{color:'rgba(0,245,255,0.7)',letterSpacing:'0.05em'}}>{label}</span>}
+                    <div className={`absolute -top-1.5 -right-1.5 text-[9px] w-5 h-5 flex items-center justify-center rounded-full font-black skill-count ${count > 0 ? '' : 'empty'}`}>{count}</div>
+                </div>
+            </button>
+        );
+
+
+        const SettingsScreen = ({ t, language, setLanguage, controlType, setControlType, isPlayConnected, setIsPlayConnected, onReset }) => {
+            const [musicOn, setMusicOn] = useState(isMusicPlaying);
+            const toggleMusic = () => { if(musicOn) stopMusic(); else startMusic(); setMusicOn(!musicOn); };
+            const langs = [{ code:'tr', flag:'🇹🇷' }, { code:'en', flag:'🇬🇧' }, { code:'ar', flag:'🇸🇦' }];
+
+            const Card = ({ children }) => (
+                <div className="w-full bg-gray-800/80 rounded-3xl border border-white/10 overflow-hidden shadow-xl">{children}</div>
+            );
+            const Row = ({ label, children }) => (
+                <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 last:border-0">
+                    <p className="text-sm font-bold text-white/70">{label}</p>
+                    {children}
+                </div>
+            );
+
+            return (
+                <div className="h-full overflow-y-auto bg-gradient-to-b from-gray-950 to-gray-900">
+                    <div className="p-4 space-y-4 pb-28">
+                        <div className="text-center pt-2 pb-1">
+                            <h1 className="clash-font text-3xl text-white">{t('settings')}</h1>
+                        </div>
+
+                        <Card>
+                            <Row label={t('language')||'Dil'}>
+                                <div className="flex gap-2">
+                                    {langs.map(l => (
+                                        <button key={l.code} onClick={() => setLanguage(l.code)}
+                                            className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 border-b-2 transition-all ${language===l.code ? 'bg-yellow-400/20 border-yellow-500 text-yellow-300 shadow-[0_0_10px_rgba(250,204,21,0.3)]' : 'bg-gray-700 border-gray-900 text-white/60 opacity-70'}`}>
+                                            <span className="text-base">{l.flag}</span>
+                                            <span>{t(`language_${l.code}`) || l.code.toUpperCase()}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </Row>
+                            <Row label={t('control_type')}>
+                                <div className="flex bg-gray-900 rounded-xl p-1 gap-1">
+                                    {['swipe', 'buttons'].map(c => (
+                                        <button key={c} onClick={() => { playSound('click'); setControlType(c); }}
+                                            className={`px-4 py-2 rounded-lg font-black text-xs uppercase transition-all ${controlType===c ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500'}`}>
+                                            {t(c)}
+                                        </button>
+                                    ))}
+                                </div>
+                            </Row>
+                            <Row label={t('music')}>
+                                <button onClick={toggleMusic} className={`w-14 h-7 rounded-full transition-all border-2 flex items-center ${musicOn ? 'bg-green-500 border-green-700 justify-end' : 'bg-gray-700 border-gray-900 justify-start'}`}>
+                                    <div className="w-5 h-5 rounded-full bg-white m-0.5 shadow-md"></div>
+                                </button>
+                            </Row>
+                            <Row label="Google Play">
+                                <button onClick={() => { playSound('coin'); setIsPlayConnected(!isPlayConnected); }}
+                                    className={`px-4 py-2 rounded-lg font-black text-xs uppercase transition-all shadow-md ${isPlayConnected ? 'bg-green-600 border-b-2 border-green-800 text-white' : 'bg-gray-700 border-b-2 border-gray-900 text-white'}`}>
+                                    {isPlayConnected ? 'Bağlandı 🎮' : 'Bağlan 🎮'}
+                                </button>
+                            </Row>
+                        </Card>
+
+                        <button onClick={onReset}
+                            className="w-full clash-btn bg-gradient-to-t from-red-800 to-red-600 text-white font-black py-4 rounded-2xl border-b-4 border-red-900 uppercase shadow-xl">
+                            🗑️ {t('reset_data')}
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const Leaderboard = ({ t, progress, username, avatar, isPlayConnected }) => {
+            const friends = [
+                { name: "Alp_Pro", level: Math.max(1, progress + 2), avatar: AVATARS[1], isMe: false },
+                { name: username, level: progress + 1, avatar: avatar, isMe: true },
+                { name: "Selin", level: Math.max(1, progress - 1), avatar: AVATARS[2], isMe: false },
+                { name: "Mertx", level: Math.max(1, progress - 3), avatar: AVATARS[3], isMe: false },
+                { name: "Oyuncu102", level: Math.max(1, progress - 4), avatar: AVATARS[4], isMe: false }
+            ].sort((a,b) => b.level - a.level);
+
+            return (
+                <div className="h-full overflow-y-auto bg-gradient-to-b from-gray-950 to-gray-900">
+                    <div className="p-4 pb-28 space-y-4">
+                        <div className="text-center pt-2 pb-1">
+                            <h1 className="clash-font text-3xl text-white">🏆 {t('leaderboard') || 'Liderlik'}</h1>
+                            <p className="text-white/40 text-xs font-bold uppercase tracking-widest">{t('friends') || 'Arkadaşlar'}</p>
+                        </div>
+                        
+                        {!isPlayConnected && (
+                            <div className="bg-blue-900/30 border border-blue-500/50 rounded-2xl p-4 text-center mb-4">
+                                <p className="text-xs text-blue-200 mb-2">Google Play hesabınızı bağlayarak ilerlemenizi kaydedin ve arkadaşlarınızı görün!</p>
+                                <p className="text-[10px] text-white/40">(Ayarlar'dan bağlanabilirsiniz)</p>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 gap-3">
+                            {friends.map((f, i) => (
+                                <div key={i} className={`flex items-center gap-4 p-4 rounded-3xl border shadow-xl ${f.isMe ? 'bg-yellow-900/40 border-yellow-500/50' : 'bg-gray-800/80 border-white/10'} ${!isPlayConnected && !f.isMe ? 'opacity-40 blur-[2px]' : ''}`}>
+                                    <div className={`font-black text-2xl w-6 text-center ${i===0?'text-yellow-400':i===1?'text-gray-300':i===2?'text-orange-400':'text-white/30'}`}>{i+1}</div>
+                                    <img src={f.avatar} className="w-14 h-14 rounded-full border-2 border-white/20 bg-blue-900 object-cover" />
+                                    <div className="flex-1">
+                                        <p className={`clash-font text-lg ${f.isMe ? 'text-yellow-400' : 'text-white'}`}>{f.isMe ? f.name : (isPlayConnected ? f.name : '????')}</p>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-[10px] text-white/40 font-bold uppercase">{t('mission') || 'Görev'}</span>
+                                        <span className="clash-font text-2xl text-yellow-500">{f.isMe ? f.level : (isPlayConnected ? f.level : '?')}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+
+        const NavButton = ({ icon: Icon, label, active, onClick }) => (
+            <button onClick={() => { playSound('click'); onClick(); }}
+                className={`flex flex-col items-center gap-1 px-4 py-2 transition-all ${active ? '' : 'opacity-50'}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${active ? 'bg-white/15 border border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.1)]' : ''}`}>
+                    <Icon size={22} color={active ? 'white' : '#6b7280'} />
+                </div>
+                <span className={`text-[9px] font-black uppercase tracking-wide ${active ? 'text-white' : 'text-gray-500'}`}>{label}</span>
+            </button>
+        );
+
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(registration => {
+                    console.log('SW kayıt başarılı:', registration.scope);
+                }).catch(err => {
+                    console.log('SW kayıt hatası:', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

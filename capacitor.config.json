@@ -1,0 +1,10 @@
+{
+  "appId": "com.omer.wordtris",
+  "appName": "WordTris",
+  "webDir": "www",
+  "plugins": {
+    "AdMob": {
+      "appId": "ca-app-pub-3940256099942544~3347511713"
+    }
+  }
+}

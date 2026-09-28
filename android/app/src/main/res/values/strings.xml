@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">WordTris</string>
+    <string name="title_activity_main">WordTris</string>
+    <string name="package_name">com.omer.wordtris</string>
+    <string name="custom_url_scheme">com.omer.wordtris</string>
+</resources>
